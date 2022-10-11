@@ -23,6 +23,10 @@ locals {
     "js"   = "application/javascript"
     "txt"  = "text/plain"
   }
+  files_to_upload = [
+    "index.html",
+    "error.html"
+  ]
 }
 
 resource "aws_s3_bucket" "demo_bucket" {
@@ -70,12 +74,26 @@ resource "aws_route53_record" "demo_domain" {
   }
 }
 
+resource "null_resource" "add_date" {
+  depends_on = [
+    aws_route53_record.demo_domain,
+  ]
+
+  provisioner "local-exec" {
+    command = "python3 ${path.root}/add_date.py; sleep 2"
+  }
+}
+
 # Load the source files.
-resource "aws_s3_bucket_object" "index" {
-  for_each     = fileset("${path.root}/${var.static_dir}", "*")
+resource "aws_s3_bucket_object" "files" {
+  depends_on = [
+    null_resource.add_date,
+  ]
+
+  for_each     = toset(local.files_to_upload)
   content_type = lookup(local.type_by_ext, split(".", each.value)[1], local.type_by_ext["txt"])
   bucket       = aws_s3_bucket.demo_bucket.bucket
   key          = each.value
   source       = "${path.root}/${var.static_dir}/${each.value}"
-  etag         = filemd5("${path.root}/${var.static_dir}/${each.value}")
+//  etag         = filemd5("${path.root}/${var.static_dir}/${each.value}")
 }
