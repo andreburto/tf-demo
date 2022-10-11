@@ -74,7 +74,7 @@ resource "aws_route53_record" "demo_domain" {
 resource "aws_s3_bucket_object" "index" {
   for_each     = fileset("${path.root}/${var.static_dir}", "*")
   content_type = lookup(local.type_by_ext, split(".", each.value)[1], local.type_by_ext["txt"])
-  bucket       = aws_s3_bucket.tm_bucket.bucket
+  bucket       = aws_s3_bucket.demo_bucket.bucket
   key          = each.value
   source       = "${path.root}/${var.static_dir}/${each.value}"
   etag         = filemd5("${path.root}/${var.static_dir}/${each.value}")
